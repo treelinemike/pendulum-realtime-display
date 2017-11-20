@@ -1,4 +1,4 @@
-
+// this is a test
 // imu-data-displayDlg.cpp : implementation file
 //
 // MFC multithreading tutorial: https://www.tutorialspoint.com/mfc/mfc_multithreading.htm
