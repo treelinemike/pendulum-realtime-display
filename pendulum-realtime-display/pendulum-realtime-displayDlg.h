@@ -18,7 +18,7 @@
 #define PKT_TYPE_BOSH_CONFIG 0xA2
 #define PKT_TYPE_ENCODER_DATA 0xAA
 #define DEFAULT_PLOT_MAX_TIME 30               // [seconds]
-#define IMU_PLOT_TIMER_PERIOD_MS 50    // 10ms = 100Hz; 20ms = 50Hz; 50ms = 20Hz; 100ms = 10Hz
+#define IMU_PLOT_TIMER_PERIOD_MS 20    // 10ms = 100Hz; 20ms = 50Hz; 50ms = 20Hz; 100ms = 10Hz
 
 // CimudatadisplayDlg dialog
 class CimudatadisplayDlg : public CDialogEx

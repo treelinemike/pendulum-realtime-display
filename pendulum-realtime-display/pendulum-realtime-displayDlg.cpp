@@ -33,6 +33,7 @@ double t = 0;
 double Gx, Gy, Gz, Ax, Ay, Az;
 unsigned long int encCount = 0;
 unsigned long int encSub = 0;
+std::deque<double> theta_dot_history;
 double theta = 0;
 double theta_dot = 0;
 BOOL stopNow;
@@ -163,7 +164,7 @@ BOOL CimudatadisplayDlg::OnInitDialog()
 	CChartStandardAxis* pLeftAxisEncoder = m_ChartCtrlEncoder.CreateStandardAxis(CChartCtrl::LeftAxis);
 	pBottomAxisEncoder->SetMinMax(0, plotMaxTime);
 	pBottomAxisEncoder->GetLabel()->SetText(_T("Time [s]"));
-	pLeftAxisEncoder->SetMinMax(-4*pi, 4*pi);
+	pLeftAxisEncoder->SetMinMax(-2.5, 2.5);
 	pLeftAxisEncoder->GetLabel()->SetText(_T("Theta [rad]"));
 	m_ChartCtrlEncoder.EnableRefresh(true);
 
@@ -173,7 +174,7 @@ BOOL CimudatadisplayDlg::OnInitDialog()
 	CChartStandardAxis* pLeftAxisThetaDot = m_ChartCtrlThetaDot.CreateStandardAxis(CChartCtrl::LeftAxis);
 	pBottomAxisThetaDot->SetMinMax(0, plotMaxTime);
 	pBottomAxisThetaDot->GetLabel()->SetText(_T("Time [s]"));
-	pLeftAxisThetaDot->SetMinMax(-20 * pi, 20 * pi);
+	pLeftAxisThetaDot->SetMinMax(-16, 16);
 	pLeftAxisThetaDot->GetLabel()->SetText(_T("Theta Dot [rad/s]"));
 	m_ChartCtrlThetaDot.EnableRefresh(true);
 
@@ -183,9 +184,9 @@ BOOL CimudatadisplayDlg::OnInitDialog()
 		m_ChartCtrlPhasePlot.CreateStandardAxis(CChartCtrl::BottomAxis);
 	CChartStandardAxis* pLeftAxisPhasePlot =
 		m_ChartCtrlPhasePlot.CreateStandardAxis(CChartCtrl::LeftAxis);
-	pBottomAxisPhasePlot->SetMinMax(-2*pi, 2*pi);
+	pBottomAxisPhasePlot->SetMinMax(-2.5, 2.5);
 	pBottomAxisPhasePlot->GetLabel()->SetText(_T("Theta [rad]"));
-	pLeftAxisPhasePlot->SetMinMax(-50, 50);
+	pLeftAxisPhasePlot->SetMinMax(-16, 16);
 	pLeftAxisPhasePlot->GetLabel()->SetText(_T("Theta Dot [rad/s]"));
 	m_ChartCtrlPhasePlot.EnableRefresh(true);
 
@@ -511,9 +512,24 @@ UINT MyThreadProc(LPVOID Param) {
 					}
 					double newTheta = 2 * pi*(((double)newEncoderCount - (double)encSub) / 32768.0);
 				
-					// compute velocity (unfiltered)
+
+					// compute instantaneous velocity (unfiltered)
 					if (dt > 0) {
 						theta_dot = (newTheta-theta)/dt;
+						theta_dot_history.push_front(theta_dot);
+					}
+
+					if (theta_dot_history.size() > 3) {   // magic number: width of moving average window
+						theta_dot_history.pop_back();
+					}
+
+					if (theta_dot_history.size() > 0) {
+						unsigned int dequeIdx;
+						double thetaDotSum = 0;
+						for (dequeIdx = 0; dequeIdx < theta_dot_history.size(); dequeIdx++) {
+							thetaDotSum += theta_dot_history[dequeIdx];
+						}
+						theta_dot = thetaDotSum / theta_dot_history.size();
 					}
 
 					// update current encoder count and angle
@@ -618,7 +634,7 @@ void CimudatadisplayDlg::OnBnClickedButton1()
 			pBottomAxisThetaDot->SetMinMax(0, plotMaxTime);
 
 			m_ctrlStatus.SetWindowText(L"Starting...");
-			SetTimer(1234, IMU_PLOT_TIMER_PERIOD_MS, 0); // 3 times per second
+			SetTimer(1234, IMU_PLOT_TIMER_PERIOD_MS, 0);
 			stopNow = false;
 
 			AfxBeginThread(MyThreadProc, 0); // <<== START THE THREAD
